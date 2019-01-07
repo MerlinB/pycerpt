@@ -35,7 +35,7 @@ class AnnotatedPDF:
         self.doc = PDFDocument(self.parser)
 
     def get_title(self):
-        return 'hello world'
+        return self.doc.info[0].get('Title')
 
     def gen_excerpt_file(self, output_path):
         title = self.get_title()
