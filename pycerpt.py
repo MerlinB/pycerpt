@@ -1,7 +1,5 @@
 import click
-import sys
 import io
-import textwrap
 
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
@@ -13,9 +11,7 @@ from pdfminer.pdfpage import PDFPage
 from pdfminer.layout import LAParams, LTContainer, LTAnno, LTText, LTTextBox
 from pdfminer.converter import TextConverter
 from pdfminer.pdfparser import PDFParser
-from pdfminer.pdfdocument import PDFDocument, PDFNoOutlines
-from pdfminer.psparser import PSLiteralTable, PSLiteral
-import pdfminer.pdftypes as pdftypes
+from pdfminer.pdfdocument import PDFDocument
 import pdfminer.settings
 
 
