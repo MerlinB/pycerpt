@@ -46,14 +46,17 @@ class AnnotatedPDF:
         excerpt = Excerpt(title)
 
         for annot in self.get_annotations():
-            excerpt.add_paragraph(annot.gettext())
+            excerpt.add_paragraph(annot.get_text())
 
         excerpt.save_pdf(output_path)
 
     def get_annotations(self):
+        annots = []
         for (pageno, page_dict) in enumerate(PDFPage.create_pages(self.doc)):
-            page = Page(pageno, pdf_object=page_dict)
-            return page.get_annots()
+            page = Page(pageno, page_dict, self)
+            page.extract_annots()
+            annots += page.annots
+        return annots
 
     def close(self):
         self.device.close()
@@ -61,46 +64,35 @@ class AnnotatedPDF:
 
 
 class Page:
-    def __init__(self, number, pdf_object):
+    def __init__(self, number, pdf_object, annotated_pdf):
         self.pdf_object = pdf_object
         self.number = number
         self.annots = []
+        self.document = annotated_pdf
 
     @property
     def has_annots(self):
         return bool(self.pdf_object.annots)
 
-    def get_annots(self):
+    def extract_annots(self):
         if self.has_annots:
-            self.create_annotations()
-            self.set_coords()
-            self.process()
-            return self.annots
+            self.create_annots()
+            self.process_annots()
 
     def get_resolved_annots(self):
         resolved_annots = []
-        for annot in self.pdf_object.annots:
-            resolved_annots.append(annot.resolve)
+        for annot in self.pdf_object.annots.resolve():
+            resolved_annots.append(annot.resolve())
         return resolved_annots
 
-    def set_coords(self):
-        self.pdf_object.document.device.setcoords(self.extracted_annots)
-
-    def process(self):
-        self.pdf_object.document.interpreter.process_page(self.pdf_object)
-
     def create_annots(self):
-        annots = []
         for resolved_annot in self.get_resolved_annots():
-            annot = AnnotationWrapper.from_resolved_annot(resolved_annot)
+            annot = AnnotationWrapper(resolved_annot)
+            self.annots.append(annot)
 
-            contents = annot.get('Contents')
-            if contents is not None:
-                contents = str(contents, 'iso8859-15')
-                contents = contents.replace('\r\n', '\n').replace('\r', '\n')
-            annots.append(annot)
-
-        return annots
+    def process_annots(self):
+        self.document.device.set_annots(self.annots)
+        self.document.interpreter.process_page(self.pdf_object)
 
 
 class Box:
@@ -148,6 +140,7 @@ class AnnotationWrapper:
     def __init__(self, pdf_object):
         self.pdf_object = pdf_object
         self.boxes = self.get_boxes()
+        self.text = ''
 
     @property
     def subtype(self):
@@ -181,13 +174,16 @@ class AnnotationWrapper:
     def get_text(self):
         if self.text:
             # replace tex ligatures (and other common odd characters)
-            return ''.join([self.substitutions.get(c, c) for c in self.text.strip()])
+            return ''.join(
+                [self.substitutions.get(c, c) for c in self.text.strip()])
 
 
 class RectExtractor(TextConverter):
     def __init__(self, rsrcmgr, codec='utf-8', pageno=1, laparams=None):
         io_dummy = io.StringIO()
-        TextConverter.__init__(self, rsrcmgr, outfp=io_dummy, codec=codec, pageno=pageno, laparams=laparams)
+        TextConverter.__init__(
+            self, rsrcmgr, outfp=io_dummy, codec=codec, pageno=pageno,
+            laparams=laparams)
         self.annots = []
         self._lasthit = []
 
@@ -195,7 +191,7 @@ class RectExtractor(TextConverter):
         self.annots = [a for a in annots if a.boxes]
         self._lasthit = []
 
-    def testboxes(self, item):
+    def test_boxes(self, item):
         self._lasthit = []
         for annot in self.annots:
             if any([box.does_include(item) for box in annot.boxes]):
@@ -212,10 +208,10 @@ class RectExtractor(TextConverter):
                 for a in self._lasthit:
                     a.capture(item.get_text())
             elif isinstance(item, LTText):
-                for a in self.testboxes(item):
+                for a in self.test_boxes(item):
                     a.capture(item.get_text())
             if isinstance(item, LTTextBox):
-                for a in self.testboxes(item):
+                for a in self.test_boxes(item):
                     a.capture('\n')
 
         render(ltpage)
