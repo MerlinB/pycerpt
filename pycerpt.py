@@ -22,7 +22,9 @@ pdfminer.settings.STRICT = False
 @click.argument('pdf_input_path')
 @click.argument('pdf_output_path')
 def pycerpt(pdf_input_path, pdf_output_path):
-    AnnotatedPDF(pdf_input_path).gen_excerpt_file(pdf_output_path)
+    loaded_pdf = AnnotatedPDF(pdf_input_path)
+    loaded_pdf.gen_excerpt_file(pdf_output_path)
+    loaded_pdf.close()
 
 
 class AnnotatedPDF:
@@ -47,7 +49,7 @@ class AnnotatedPDF:
         excerpt.save_pdf(output_path)
 
     def get_annotation_texts(self):
-        return [annot.get_text() for annot in self.get_annotations()]
+        return [annot.get_substituted_text() for annot in self.get_annotations()]
 
     def get_annotations(self):
         annots = []
@@ -160,7 +162,10 @@ class AnnotationWrapper:
             contents = contents.replace('\r\n', '\n').replace('\r', '\n')
         return contents
 
-    def capture(self, text):
+    def overlaps(self, item):
+        return any([box.does_include(item) for box in self.boxes])
+
+    def add_text(self, text):
         if text == '\n':
             # kludge for latex: elide hyphens, join lines
             if self.text.endswith('-'):
@@ -170,11 +175,12 @@ class AnnotationWrapper:
         else:
             self.text += text
 
-    def get_text(self):
-        if self.text:
-            # replace tex ligatures (and other common odd characters)
-            return ''.join(
-                [self.substitutions.get(c, c) for c in self.text.strip()])
+    def get_substituted_text(self):
+        text = self.text
+        if text:
+            for search, substitution in self.substitutions.items():
+                text = text.replace(search, substitution)
+        return text
 
 
 class RectExtractor(TextConverter):
@@ -184,18 +190,28 @@ class RectExtractor(TextConverter):
             self, rsrcmgr, outfp=io_dummy, codec=codec, pageno=pageno,
             laparams=laparams)
         self.annots = []
-        self._lasthit = []
+        self._matches = []
+
+    def reset_matches(self):
+        self._matches = []
 
     def set_annots(self, annots):
-        self.annots = [a for a in annots if a.boxes]
-        self._lasthit = []
+        self.annots = [annot for annot in annots if annot.boxes]
+        self._matches = []
 
-    def test_boxes(self, item):
-        self._lasthit = []
+    def get_overlapping_annots(self, item):
+        matches = []
         for annot in self.annots:
-            if any([box.does_include(item) for box in annot.boxes]):
-                self._lasthit.append(annot)
-        return self._lasthit
+            if annot.overlaps(item):
+                matches.append(annot)
+        return matches
+
+    def match_new(self, item):
+        self._matches = self.get_overlapping_annots(item)
+
+    def add_text(self, text):
+        for annot in self._matches:
+            annot.add_text(text)
 
     def receive_layout(self, ltpage):
         def render(item):
@@ -203,15 +219,13 @@ class RectExtractor(TextConverter):
                 for child in item:
                     render(child)
             elif isinstance(item, LTAnno):
-                # this catches whitespace
-                for a in self._lasthit:
-                    a.capture(item.get_text())
+                self.add_text(item.get_text())
             elif isinstance(item, LTText):
-                for a in self.test_boxes(item):
-                    a.capture(item.get_text())
+                self.match_new(item)
+                self.add_text(item.get_text())
             if isinstance(item, LTTextBox):
-                for a in self.test_boxes(item):
-                    a.capture('\n')
+                self.match_new(item)
+                self.add_text('\n')
 
         render(ltpage)
 
