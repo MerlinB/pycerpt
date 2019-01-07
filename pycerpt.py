@@ -37,18 +37,21 @@ class AnnotatedPDF:
     def get_title(self):
         return self.doc.info[0].get('Title')
 
+    def get_pages(self):
+        return PDFPage.create_pages(self.doc)
+
     def gen_excerpt_file(self, output_path):
         title = self.get_title()
         excerpt = Excerpt(title)
-
-        for annot in self.get_annotations():
-            excerpt.add_paragraph(annot.get_text())
-
+        excerpt.add_paragraphs(self.get_annotation_texts())
         excerpt.save_pdf(output_path)
+
+    def get_annotation_texts(self):
+        return [annot.get_text() for annot in self.get_annotations()]
 
     def get_annotations(self):
         annots = []
-        for (pageno, page_dict) in enumerate(PDFPage.create_pages(self.doc)):
+        for (pageno, page_dict) in enumerate(self.get_pages()):
             page = Page(pageno, page_dict, self)
             page.extract_annots()
             annots += page.annots
@@ -60,15 +63,15 @@ class AnnotatedPDF:
 
 
 class Page:
-    def __init__(self, number, pdf_object, annotated_pdf):
-        self.pdf_object = pdf_object
+    def __init__(self, number, obj_dict, annotated_pdf):
+        self.obj_dict = obj_dict
         self.number = number
         self.annots = []
         self.document = annotated_pdf
 
     @property
     def has_annots(self):
-        return bool(self.pdf_object.annots)
+        return bool(self.obj_dict.annots)
 
     def extract_annots(self):
         if self.has_annots:
@@ -77,7 +80,7 @@ class Page:
 
     def get_resolved_annots(self):
         resolved_annots = []
-        for annot in self.pdf_object.annots.resolve():
+        for annot in self.obj_dict.annots.resolve():
             resolved_annots.append(annot.resolve())
         return resolved_annots
 
@@ -88,7 +91,7 @@ class Page:
 
     def process_annots(self):
         self.document.device.set_annots(self.annots)
-        self.document.interpreter.process_page(self.pdf_object)
+        self.document.interpreter.process_page(self.obj_dict)
 
 
 class Box:
@@ -133,25 +136,25 @@ class AnnotationWrapper:
         u'’': "'",
     }
 
-    def __init__(self, pdf_object):
-        self.pdf_object = pdf_object
+    def __init__(self, obj_dict):
+        self.obj_dict = obj_dict
         self.boxes = self.get_boxes()
         self.text = ''
 
     @property
     def subtype(self):
-        subtype = self.pdf_object.get('Subtype')
+        subtype = self.obj_dict.get('Subtype')
         return subtype.name if subtype else None
 
     @property
     def coords(self):
-        return self.pdf_object.get('QuadPoints')
+        return self.obj_dict.get('QuadPoints')
 
     def get_boxes(self):
         return Box.from_coords(self.coords)
 
     def get_content(self):
-        contents = self.pdf_object.get('Contents')
+        contents = self.obj_dict.get('Contents')
         if contents is not None:
             contents = str(contents, 'iso8859-15')
             contents = contents.replace('\r\n', '\n').replace('\r', '\n')
@@ -238,6 +241,10 @@ class Excerpt:
         new_paragraph = Paragraph(text, self.style)
         self.story.append(new_paragraph)
         self.add_space(self.paragraph_spacing)
+
+    def add_paragraphs(self, paragraph_list):
+        for paragraph in paragraph_list:
+            self.add_paragraph(paragraph)
 
     def add_title(self, canvas, doc):
         canvas.saveState()
