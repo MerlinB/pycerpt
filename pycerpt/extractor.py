@@ -36,11 +36,11 @@ class AnnotatedPDF:
         excerpt.save_pdf(output_path)
 
     def get_annot_texts(self):
-        return [annot.get_substituted_text() for annot in self.get_annots()]
+        return [annot.get_paragraph() for annot in self.get_annots()]
 
     def get_annots(self):
         annots = []
-        for (pageno, page_dict) in enumerate(self.get_pages()):
+        for (pageno, page_dict) in enumerate(self.get_pages(), 1):
             page = Page(pageno, page_dict, self)
             page.extract_annots()
             annots += page.annots
@@ -75,7 +75,7 @@ class Page:
 
     def create_annots(self):
         for resolved_annot in self.get_resolved_annots():
-            annot = AnnotationWrapper(resolved_annot)
+            annot = AnnotationWrapper(resolved_annot, self.number)
             self.annots.append(annot)
 
     def process_annots(self):
@@ -125,10 +125,11 @@ class AnnotationWrapper:
         u'’': "'",
     }
 
-    def __init__(self, obj_dict):
+    def __init__(self, obj_dict, pageno):
         self.obj_dict = obj_dict
         self.boxes = self.get_boxes()
         self.text = ''
+        self.pageno = pageno
 
     @property
     def subtype(self):
@@ -167,6 +168,11 @@ class AnnotationWrapper:
         if text:
             for search, substitution in self.substitutions.items():
                 text = text.replace(search, substitution)
+        return text
+
+    def get_paragraph(self):
+        text = self.get_substituted_text()
+        text += f'({self.pageno})'
         return text
 
 
