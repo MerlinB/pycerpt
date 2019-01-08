@@ -47,16 +47,15 @@ class AnnotatedPDF:
         excerpt.save_pdf(output_path)
 
     def get_annot_texts(self):
-        return [annot.get_paragraph() for annot in self.get_annots()
-                if not annot.is_empty]
+        return (annot.get_paragraph() for annot in self.get_annots()
+                if not annot.is_empty)
 
     def get_annots(self):
-        annots = []
         for (pageno, page_dict) in enumerate(self.get_pages(), 1):
             page = Page(pageno, page_dict, self)
             page.extract_annots()
-            annots += page.annots
-        return annots
+            for annot in page.annots:
+                yield annot
 
     def close(self):
         self.device.close()
@@ -80,10 +79,8 @@ class Page:
             self.process_annots()
 
     def get_resolved_annots(self):
-        resolved_annots = []
         for annot in self.obj_dict.annots.resolve():
-            resolved_annots.append(annot.resolve())
-        return resolved_annots
+            yield annot.resolve()
 
     def create_annots(self):
         for resolved_annot in self.get_resolved_annots():
@@ -222,14 +219,12 @@ class RectExtractor(TextConverter):
         self._matches = []
 
     def get_overlapping_annots(self, char):
-        matches = []
         for annot in self.annots:
             if annot.overlaps(char):
-                matches.append(annot)
-        return matches
+                yield annot
 
     def match_new_character(self, char):
-        self._matches = self.get_overlapping_annots(char)
+        self._matches = list(self.get_overlapping_annots(char))
 
     def add_char(self, char):
         for annot in self._matches:
