@@ -184,7 +184,7 @@ class AnnotationWrapper:
 
     def get_paragraph(self):
         text = self.get_substituted_text()
-        text += f'({self.pageno})'
+        text += f' ({self.pageno})'
         return text
 
 
