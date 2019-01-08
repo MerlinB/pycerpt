@@ -1,5 +1,7 @@
 import io
 
+import chardet
+
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.pdfpage import PDFPage
 from pdfminer.layout import LAParams, LTContainer, LTAnno, LTText, LTTextBox
@@ -24,7 +26,12 @@ class AnnotatedPDF:
         self.doc = PDFDocument(self.parser)
 
     def get_title(self):
-        return self.doc.info[0].get('Title')
+        title = self.doc.info[0].get('Title')
+        if isinstance(title, str):
+            return title
+        elif isinstance(title, bytes):
+            encoding = chardet.detect(title)
+            return title.decode(encoding['encoding'])
 
     def get_pages(self):
         return PDFPage.create_pages(self.doc)
