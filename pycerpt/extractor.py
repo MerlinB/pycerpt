@@ -232,7 +232,7 @@ class RectExtractor(TextConverter):
 
     def handle_new_box(self):
         for annot in self._matches:
-            annot.hanlde_line_break()
+            annot.handle_line_break()
 
     def receive_layout(self, ltpage):
         def render(item):
