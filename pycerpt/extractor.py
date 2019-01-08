@@ -1,4 +1,5 @@
 import io
+import re
 
 import chardet
 
@@ -8,6 +9,7 @@ from pdfminer.layout import LAParams, LTContainer, LTAnno, LTText, LTTextBox
 from pdfminer.converter import TextConverter
 from pdfminer.pdfparser import PDFParser
 from pdfminer.pdfdocument import PDFDocument
+from pdfminer.pdftypes import PDFObjRef
 import pdfminer.settings
 
 from .generator import Excerpt
@@ -32,6 +34,8 @@ class AnnotatedPDF:
         elif isinstance(title, bytes):
             encoding = chardet.detect(title)
             return title.decode(encoding['encoding'])
+        else:
+            raise TypeError("Unknown type of title.")
 
     def get_pages(self):
         return PDFPage.create_pages(self.doc)
@@ -144,13 +148,24 @@ class AnnotationWrapper:
         return not bool(self.text)
 
     @property
+    def endswith_wordbreak(self):
+        re_pattern = re.compile(r'\w-$')
+        return bool(re_pattern.search(self.text))
+
+    @property
     def subtype(self):
         subtype = self.obj_dict.get('Subtype')
         return subtype.name if subtype else None
 
     @property
     def coords(self):
-        return self.obj_dict.get('QuadPoints', [])
+        coords = self.obj_dict.get('QuadPoints', [])
+        if isinstance(coords, list):
+            return coords
+        elif isinstance(coords, PDFObjRef):
+            return coords.resolve()
+        else:
+            raise TypeError("Unknown type of annotation coordinates.")
 
     def get_boxes(self):
         return Box.from_coords(self.coords)
@@ -165,15 +180,17 @@ class AnnotationWrapper:
     def overlaps(self, item):
         return any([box.does_include(item) for box in self.boxes])
 
-    def add_text(self, text):
-        if text == '\n':
-            # kludge for latex: elide hyphens, join lines
-            if self.text.endswith('-'):
-                self.text = self.text[:-1]
-            else:
-                self.text += ' '
+    def add_char(self, char):
+        if char == '\n':
+            self.handle_line_break()
         else:
-            self.text += text
+            self.text += char
+
+    def handle_line_break(self):
+        if self.endswith_wordbreak:
+            self.text = self.text[:-1]
+        elif not self.text.endswith(' '):
+            self.text += ' '
 
     def get_substituted_text(self):
         text = self.text
@@ -204,19 +221,23 @@ class RectExtractor(TextConverter):
         self.annots = [annot for annot in annots if annot.boxes]
         self._matches = []
 
-    def get_overlapping_annots(self, item):
+    def get_overlapping_annots(self, char):
         matches = []
         for annot in self.annots:
-            if annot.overlaps(item):
+            if annot.overlaps(char):
                 matches.append(annot)
         return matches
 
-    def match_new(self, item):
-        self._matches = self.get_overlapping_annots(item)
+    def match_new_character(self, char):
+        self._matches = self.get_overlapping_annots(char)
 
-    def add_text(self, text):
+    def add_char(self, char):
         for annot in self._matches:
-            annot.add_text(text)
+            annot.add_char(char)
+
+    def handle_new_box(self):
+        for annot in self._matches:
+            annot.hanlde_line_break()
 
     def receive_layout(self, ltpage):
         def render(item):
@@ -224,12 +245,12 @@ class RectExtractor(TextConverter):
                 for child in item:
                     render(child)
             elif isinstance(item, LTAnno):
-                self.add_text(item.get_text())
+                self.add_char(item.get_text())
             elif isinstance(item, LTText):
-                self.match_new(item)
-                self.add_text(item.get_text())
-            if isinstance(item, LTTextBox):
-                self.match_new(item)
-                self.add_text('\n')
+                self.match_new_character(item)
+                self.add_char(item.get_text())
+            elif isinstance(item, LTTextBox):
+                self.match_new_character(item)
+                self.handle_new_box()
 
         render(ltpage)
