@@ -43,7 +43,8 @@ class AnnotatedPDF:
         excerpt.save_pdf(output_path)
 
     def get_annot_texts(self):
-        return [annot.get_paragraph() for annot in self.get_annots()]
+        return [annot.get_paragraph() for annot in self.get_annots()
+                if not annot.is_empty]
 
     def get_annots(self):
         annots = []
@@ -137,6 +138,10 @@ class AnnotationWrapper:
         self.boxes = self.get_boxes()
         self.text = ''
         self.pageno = pageno
+
+    @property
+    def is_empty(self):
+        return not bool(self.text)
 
     @property
     def subtype(self):
