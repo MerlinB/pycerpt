@@ -103,15 +103,13 @@ class Box:
     @classmethod
     def from_coords(cls, coords):
         assert len(coords) % 8 == 0
-        boxes = []
-        while coords != []:
+        while coords:
             (x0, y0, x1, y1, x2, y2, x3, y3) = coords[:8]
             xvals = [x0, x1, x2, x3]
             yvals = [y0, y1, y2, y3]
             box = cls(min(xvals), min(yvals), max(xvals), max(yvals))
-            boxes.append(box)
+            yield box
             coords = coords[8:]
-        return boxes
 
     def does_include(self, item):
         assert item.x0 <= item.x1 and item.y0 <= item.y1
@@ -165,7 +163,7 @@ class AnnotationWrapper:
             raise TypeError("Unknown type of annotation coordinates.")
 
     def get_boxes(self):
-        return Box.from_coords(self.coords)
+        return list(Box.from_coords(self.coords))
 
     def get_content(self):
         contents = self.obj_dict.get('Contents')
