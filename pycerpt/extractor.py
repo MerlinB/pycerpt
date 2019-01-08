@@ -138,7 +138,7 @@ class AnnotationWrapper:
 
     @property
     def coords(self):
-        return self.obj_dict.get('QuadPoints')
+        return self.obj_dict.get('QuadPoints', [])
 
     def get_boxes(self):
         return Box.from_coords(self.coords)
