@@ -16,6 +16,9 @@ setup(
         'pdfminer.six',
         'chardet'  # https://github.com/pdfminer/pdfminer.six/issues/213
     ],
+    extras_require={
+        'dev': ['mypy', 'flake8']
+    },
     entry_points='''
         [console_scripts]
         pycerpt=pycerpt.cli:cli
