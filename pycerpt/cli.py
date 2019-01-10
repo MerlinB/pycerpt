@@ -1,12 +1,21 @@
 import click
 
 from .extractor import AnnotatedPDF
+from .excerpt import Excerpt
 
 
 @click.command()
-@click.argument('pdf_input_path')
-@click.argument('pdf_output_path')
-def cli(pdf_input_path, pdf_output_path):
-    loaded_pdf = AnnotatedPDF(pdf_input_path)
-    loaded_pdf.gen_excerpt_file(pdf_output_path)
+@click.argument('input_file', type=click.File('rb'))
+@click.argument('output_file', type=click.Path(), required=False)
+def cli(input_file, output_file):
+    loaded_pdf = AnnotatedPDF(input_file)
+    excerpt = Excerpt(
+        title=loaded_pdf.get_title(),
+        paragraphs=loaded_pdf.get_annot_texts())
+
+    if output_file:
+        excerpt.save(output_file)
+    else:
+        click.echo_via_pager(excerpt.get_markdown())
+
     loaded_pdf.close()

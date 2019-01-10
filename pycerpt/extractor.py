@@ -12,15 +12,13 @@ from pdfminer.pdfdocument import PDFDocument
 from pdfminer.pdftypes import PDFObjRef
 import pdfminer.settings
 
-from .generator import Excerpt
-
 
 pdfminer.settings.STRICT = False
 
 
 class AnnotatedPDF:
-    def __init__(self, file_path):
-        self.file = open(file_path, 'rb')
+    def __init__(self, file):
+        self.file = file
         rsrcmgr = PDFResourceManager()
         self.device = RectExtractor(rsrcmgr, laparams=LAParams())
         self.interpreter = PDFPageInterpreter(rsrcmgr, self.device)
@@ -40,12 +38,6 @@ class AnnotatedPDF:
     def get_pages(self):
         return PDFPage.create_pages(self.doc)
 
-    def gen_excerpt_file(self, output_path):
-        title = self.get_title()
-        excerpt = Excerpt(title)
-        excerpt.add_paragraphs(self.get_annot_texts())
-        excerpt.save_pdf(output_path)
-
     def get_annot_texts(self):
         return (annot.get_paragraph() for annot in self.get_annots()
                 if not annot.is_empty)
@@ -59,7 +51,6 @@ class AnnotatedPDF:
 
     def close(self):
         self.device.close()
-        self.file.close()
 
 
 class Page:
