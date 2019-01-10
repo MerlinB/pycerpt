@@ -1,4 +1,7 @@
-from .pdfgen import Story
+try:
+    from .pdfgen import Story
+except ImportError:
+    Story = None
 
 
 FILE_EXTENSIONS = {
@@ -36,13 +39,18 @@ class Excerpt:
         elif extension == 'pdf':
             self.save_pdf(path)
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(f'Export to {extension} not supported.')
 
     def save_text(self, path):
         with open(path, 'w') as file:
             file.write(self.get_markdown())
 
     def save_pdf(self, path):
-        story = Story(paragraphs=self.paragraphs)
-        story.add_title(self.title)
-        story.save(path)
+        if Story:
+            story = Story(paragraphs=self.paragraphs)
+            story.add_title(self.title)
+            story.save(path)
+        else:
+            raise ImportError(
+                "Missing dependencies. "
+                "Install [pdf] extras for PDF generation functionality.")

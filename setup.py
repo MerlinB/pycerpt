@@ -12,17 +12,18 @@ setup(
     packages=find_packages(),
     install_requires=[
         'Click',
-        'reportlab',
         'pdfminer.six',
         'chardet'  # https://github.com/pdfminer/pdfminer.six/issues/213
     ],
     extras_require={
+        'pdf': ['reportlab'],
         'dev': ['mypy', 'flake8']
     },
-    entry_points='''
-        [console_scripts]
-        pycerpt=pycerpt.cli:cli
-    ''',
+    entry_points={
+        'console_scripts': [
+            'excerpt = pycerpt.cli:cli',
+        ]
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication",
