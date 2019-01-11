@@ -7,5 +7,5 @@ addons:
     packages:
     - python3.6
     - python3.7
-install: pip install -r .[testing]
+install: pip install -e .[testing]
 script: tox
