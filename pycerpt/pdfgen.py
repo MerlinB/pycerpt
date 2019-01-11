@@ -1,18 +1,13 @@
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.rl_config import defaultPageSize
 from reportlab.lib.units import inch
 
 
-page_height = defaultPageSize[1]
-page_width = defaultPageSize[0]
-title_spacing = 0.3 * inch
-paragraph_spacing = 0.2 * inch
-font_family = 'Times-Bold'
-font_size = 16
-stylesheet = getSampleStyleSheet()
-title_style = stylesheet['Heading1']
-paragraph_style = stylesheet['Normal']
+TITLE_SPACING = 0.3 * inch
+PARAGRAPH_SPACING = 0.2 * inch
+STYLESHEET = getSampleStyleSheet()
+TITLE_STYLE = STYLESHEET['Heading1']
+PARAGRAPH_STYLE = STYLESHEET['Normal']
 
 
 class Story(list):
@@ -21,12 +16,12 @@ class Story(list):
         self.add_paragraphs(paragraphs)
 
     def add_title(self, title):
-        self.insert(0, Paragraph(title, title_style))
-        self.insert(1, Spacer(1, title_spacing))
+        self.insert(0, Paragraph(title, TITLE_STYLE))
+        self.insert(1, Spacer(1, TITLE_SPACING))
 
     def add_paragraph(self, text):
-        self.append(Paragraph(text, paragraph_style))
-        self.append(Spacer(1, paragraph_spacing))
+        self.append(Paragraph(text, PARAGRAPH_STYLE))
+        self.append(Spacer(1, PARAGRAPH_SPACING))
 
     def add_paragraphs(self, paragraphs):
         for paragraph in paragraphs:
