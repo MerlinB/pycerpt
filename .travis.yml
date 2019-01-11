@@ -1,3 +1,10 @@
+dist: xenial
 language: generic
-install: sudo apt-get install python3.6 python3.7
+addons:
+  apt:
+    sources:
+      - ppa:deadsnakes/ppa
+    packages:
+    - python3.6
+    - python3.7
 script: tox
