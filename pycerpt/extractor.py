@@ -1,16 +1,16 @@
 import io
 import re
 
-import chardet
+import chardet  # type: ignore
 
-from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
-from pdfminer.pdfpage import PDFPage
-from pdfminer.layout import LAParams, LTContainer, LTAnno, LTText, LTTextBox
-from pdfminer.converter import TextConverter
-from pdfminer.pdfparser import PDFParser
-from pdfminer.pdfdocument import PDFDocument
-from pdfminer.pdftypes import PDFObjRef
-import pdfminer.settings
+from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter  # type: ignore
+from pdfminer.pdfpage import PDFPage  # type: ignore
+from pdfminer.layout import LAParams, LTContainer, LTAnno, LTText, LTTextBox  # type: ignore
+from pdfminer.converter import TextConverter  # type: ignore
+from pdfminer.pdfparser import PDFParser  # type: ignore
+from pdfminer.pdfdocument import PDFDocument  # type: ignore
+from pdfminer.pdftypes import PDFObjRef  # type: ignore
+import pdfminer.settings  # type: ignore
 
 
 pdfminer.settings.STRICT = False
