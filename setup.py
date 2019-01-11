@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='pycerpt',
-    version='0.2.0',
+    version='0.2.1',
     author='Merlin Buczek',
     author_email='merlin.buczek@gmail.com',
     description='A cli utility for generating excerpts from highlighted PDFs',
