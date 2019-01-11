@@ -1,4 +1,4 @@
-# pycerpt [![Build Status](https://travis-ci.org/MerlinB/pycerpt.svg?branch=master)](https://travis-ci.org/MerlinB/pycerpt)
+# pycerpt [![PyPI version](https://badge.fury.io/py/pycerpt.svg)](https://badge.fury.io/py/pycerpt) [![Build Status](https://travis-ci.org/MerlinB/pycerpt.svg?branch=master)](https://travis-ci.org/MerlinB/pycerpt) ![](https://img.shields.io/pypi/pyversions/pycerpt.svg)
 
 
 Pycerpt is a  command line utility for extracting highlighted text from PDFs.
