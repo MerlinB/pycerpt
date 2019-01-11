@@ -17,7 +17,7 @@ setup(
     ],
     extras_require={
         'pdf': ['reportlab'],
-        'dev': ['mypy', 'flake8']
+        'testing': ['tox']
     },
     entry_points={
         'console_scripts': [
@@ -25,7 +25,8 @@ setup(
         ]
     },
     classifiers=[
-        "Programming Language :: Python :: 3",
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         "License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication",
         "Operating System :: OS Independent",
     ],

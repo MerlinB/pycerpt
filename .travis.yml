@@ -1,0 +1,3 @@
+language: generic
+install: sudo apt-get install python3.6 python3.7
+script: tox
